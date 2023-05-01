@@ -97,8 +97,8 @@ int main(int argc, char const *argv[])
   gettimeofday(&tval_after, NULL);
   timersub(&tval_after, &tval_before, &tval_result);
 
-  mat_print(N, N, in_mat);
-  mat_print(N, N, out_mat);
+  //mat_print(N, N, in_mat);
+  //mat_print(N, N, out_mat);
   printf("Time needed: %ld.%06ld\n", (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
 
 
@@ -129,11 +129,18 @@ void kernel(int N, double in_mat[N][N], double out_mat[N][N], double conv_mask[3
 {
   for (int mat_x_idx = 1; mat_x_idx < N-1; ++mat_x_idx) {
     for (int mat_y_idx = 1; mat_y_idx < N-1; ++mat_y_idx) {
-      for (int mask_x_idx = 0; mask_x_idx < 3; ++mask_x_idx) {
-        for (int mask_y_idx = 0; mask_y_idx < 3; ++mask_y_idx) {
-          out_mat[mat_x_idx][mat_y_idx] +=  ((double)6431/N*4 * in_mat[mat_x_idx + (mask_x_idx - 1)][mat_y_idx + (mask_y_idx - 1)] * conv_mask[mask_x_idx][mask_y_idx]) * N;
-        }
-      }
+          out_mat[mat_x_idx][mat_y_idx] +=  
+           ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
+            (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
+            (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
+
+            (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
+            (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
+            (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
+
+            (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
+            (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
+            (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
     }
   }
 }
