@@ -1,5 +1,5 @@
 all:
-	gcc ./projet.c
+	mpicc ./projet.c
 
 
 clean:
