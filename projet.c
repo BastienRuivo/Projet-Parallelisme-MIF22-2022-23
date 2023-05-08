@@ -117,8 +117,18 @@ int main(int argc, char const *argv[])
     printf("Size of the domain is too small for the number of process\n");
     exit(1);
   }
-  double (*in_mat)[N] = in_mat = mat_alloc(nLine + 2, N);;
-  double (*out_mat)[N] = mat_alloc(nLine + 2, N);
+  int restLine = (N - 2) % num_process;
+  int offset = 0;
+  int addLine = 0;
+  if(my_rank < restLine) {
+    offset = my_rank;
+    addLine = 1;
+  } else {
+    offset = restLine;
+  }
+
+  double (*in_mat)[N] = in_mat = mat_alloc(nLine + 2 + addLine, N);;
+  double (*out_mat)[N] = mat_alloc(nLine + 2 + addLine, N);
   double (*in_complete)[N] = mat_alloc(N, N);
     struct timeval tval_before, tval_after, tval_result;
 
@@ -131,19 +141,18 @@ int main(int argc, char const *argv[])
     gettimeofday(&tval_before, NULL);
     for (size_t id = 1; id < num_process; id++)
     {
-      MPI_Send(in_complete[id * nLine], N * (nLine + 2), MPI_DOUBLE, id, 0, MPI_COMM_WORLD);
+      int coffset = id < restLine ? id : restLine;
+      if(id < restLine)
+        MPI_Send(in_complete[id * (nLine) + coffset], N * (nLine + 3), MPI_DOUBLE, id, 0, MPI_COMM_WORLD);
+      else
+        MPI_Send(in_complete[id * (nLine) + coffset], N * (nLine + 2), MPI_DOUBLE, id, 0, MPI_COMM_WORLD);
     }
     
     in_mat = in_complete;
     
   } else {
-    MPI_Recv(in_mat, N * (nLine + 2), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(in_mat, N * (nLine + 2 + addLine), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
-
-  //printf("Process %d on %s\n", my_rank, hostname);
-  //printf("line [%d, %d, %d, %d]\n", (my_rank * nLine), (my_rank * nLine) + 1, (my_rank * nLine) + 2, (my_rank * nLine) + 3);
-  //mat_print(nLine + 2, N, in_mat);
-  // Scatter the matrix into block of size N / num_process + 2 where the +2 is for the border
   
   double conv_mask [3][3] =
   {
@@ -152,24 +161,24 @@ int main(int argc, char const *argv[])
     {-1, 0, 1}
   };
 
-  // Call kernel, measure time
-  //
-
-  kernel_MPI(nLine +2 , N, in_mat, out_mat, conv_mask);
-  //MPI_Gather(out_mat + N, N * nLine, MPI_DOUBLE, outm + N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
+  kernel_MPI(nLine + 2 + addLine, N, in_mat, out_mat, conv_mask);
 
   if(my_rank != 0) {
-    MPI_Send(out_mat[1], N * nLine, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(out_mat[1], N * (nLine + addLine), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
   }
   else {
     double (* outm)[N] = mat_alloc(N, N);
     for (size_t id = 1; id < num_process; id++)
     {
-      MPI_Recv(outm[id * nLine + 1], N * nLine, MPI_DOUBLE, id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      int coffset = id < restLine ? id : restLine;
+      if (id < restLine)
+        MPI_Recv(outm[id * nLine + coffset + 1], N * (nLine + 1), MPI_DOUBLE, id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      else
+        MPI_Recv(outm[id * nLine + coffset + 1], N * nLine, MPI_DOUBLE, id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
     }
 
-    for (size_t i = 0; i < nLine; i++)
+    for (size_t i = 0; i < nLine + addLine; i++)
     {
       for (size_t j = 0; j < N; j++)
       {
