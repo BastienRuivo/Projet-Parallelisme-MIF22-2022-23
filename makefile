@@ -1,4 +1,6 @@
-all:
+all: mpicc gcc
+
+mpi:
 	mpicc -o  ./run ./projet.c -O3
 
 gcc:
