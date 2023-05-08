@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <mpi.h>
 #include <unistd.h>
-
+#include <omp.h>
 
 void* mat_alloc(int M, int N)
 {
@@ -64,12 +64,34 @@ void mat_print(int M, int N, double A[M][N])
   printf("\n");
 }
 
-void kernel(int N, double in_mat[N][N], double out_mat[N][N], double conv_mask[3][3]);
+
+void kernel(int nLine, double in_mat[nLine][nLine], double out_mat[nLine][nLine], double conv_mask[3][3])
+{
+  #pragma omp parallel for
+  for (int mat_x_idx = 1; mat_x_idx < nLine - 1; ++mat_x_idx) {
+    for (int mat_y_idx = 1; mat_y_idx < nLine - 1; ++mat_y_idx) {
+          out_mat[mat_x_idx][mat_y_idx] +=  
+           ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
+            (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
+            (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
+
+            (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
+            (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
+            (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
+
+            (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
+            (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
+            (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
+
+    }
+  }
+}
 
 
 
 void kernel_MPI(int nLine, int nCol, double in_mat[nLine][nCol], double out_mat[nLine][nCol], double conv_mask[3][3])
 {
+  #pragma omp parallel for
   for (int mat_x_idx = 1; mat_x_idx < nLine - 1; ++mat_x_idx) {
     for (int mat_y_idx = 1; mat_y_idx < nCol - 1; ++mat_y_idx) {
           out_mat[mat_x_idx][mat_y_idx] +=  
@@ -135,7 +157,7 @@ int main(int argc, char const *argv[])
   if(my_rank == 0) {
     printf("Size of the domain : %d\n", N);
     printf("Number of process : %d\n", num_process);
-    printf("Line size %d\n", nLine);
+    printf("Line size (it's N - 2 / num_process) %d\n", nLine);
 
     mat_rand(N, N, in_complete);
     gettimeofday(&tval_before, NULL);
@@ -203,23 +225,3 @@ int main(int argc, char const *argv[])
   return 0;
 }
 
-void kernel(int nLine, double in_mat[nLine][nLine], double out_mat[nLine][nLine], double conv_mask[3][3])
-{
-  for (int mat_x_idx = 1; mat_x_idx < nLine - 1; ++mat_x_idx) {
-    for (int mat_y_idx = 1; mat_y_idx < nLine - 1; ++mat_y_idx) {
-          out_mat[mat_x_idx][mat_y_idx] +=  
-           ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
-            (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
-            (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
-
-            (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
-            (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
-            (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
-
-            (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
-            (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
-            (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
-
-    }
-  }
-}

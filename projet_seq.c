@@ -3,6 +3,12 @@
 #include <sys/time.h>
 #include <stdint.h>
 
+/*
+
+THIS IS THE FIRST PART OF THE PROJECT,
+IT IS USED TO SEE THE GAINS AND LOSSES OF THE PARALLELISATION
+*/
+
 
 void* mat_alloc(int M, int N)
 {
@@ -62,7 +68,25 @@ void mat_print(int M, int N, double A[M][N])
   printf("\n");
 }
 
-void kernel(int N, double in_mat[N][N], double out_mat[N][N], double conv_mask[3][3]);
+void kernel(int N, double in_mat[N][N], double out_mat[N][N], double conv_mask[3][3])
+{
+  for (int mat_x_idx = 1; mat_x_idx < N-1; ++mat_x_idx) {
+    for (int mat_y_idx = 1; mat_y_idx < N-1; ++mat_y_idx) {
+          out_mat[mat_x_idx][mat_y_idx] +=  
+           ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
+            (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
+            (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
+
+            (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
+            (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
+            (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
+
+            (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
+            (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
+            (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
+    }
+  }
+}
 
 
 int main(int argc, char const *argv[])
@@ -125,22 +149,3 @@ int main(int argc, char const *argv[])
   return 0;
 }
 
-void kernel(int N, double in_mat[N][N], double out_mat[N][N], double conv_mask[3][3])
-{
-  for (int mat_x_idx = 1; mat_x_idx < N-1; ++mat_x_idx) {
-    for (int mat_y_idx = 1; mat_y_idx < N-1; ++mat_y_idx) {
-          out_mat[mat_x_idx][mat_y_idx] +=  
-           ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
-            (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
-            (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
-
-            (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
-            (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
-            (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
-
-            (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
-            (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
-            (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
-    }
-  }
-}

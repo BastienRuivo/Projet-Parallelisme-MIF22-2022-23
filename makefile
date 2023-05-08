@@ -1,8 +1,8 @@
 all:
-	mpicc ./projet.c
+	mpicc -o  ./run ./projet.c -O3
 
 gcc:
-	gcc ./projet_seq.c
+	gcc -o  ./run_seq ./projet_seq.c -O3
 	
 clean:
 	rm -rf *.o
