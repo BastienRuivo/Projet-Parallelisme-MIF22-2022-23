@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <mpi.h>
 #include <unistd.h>
-#include <omp.h>
 
 void* mat_alloc(int M, int N)
 {
@@ -67,7 +66,6 @@ void mat_print(int M, int N, double A[M][N])
 
 void kernel(int nLine, double in_mat[nLine][nLine], double out_mat[nLine][nLine], double conv_mask[3][3])
 {
-  #pragma omp parallel for
   for (int mat_x_idx = 1; mat_x_idx < nLine - 1; ++mat_x_idx) {
     for (int mat_y_idx = 1; mat_y_idx < nLine - 1; ++mat_y_idx) {
           out_mat[mat_x_idx][mat_y_idx] +=  
@@ -82,7 +80,6 @@ void kernel(int nLine, double in_mat[nLine][nLine], double out_mat[nLine][nLine]
             (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
             (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
             (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
-
     }
   }
 }
@@ -91,22 +88,20 @@ void kernel(int nLine, double in_mat[nLine][nLine], double out_mat[nLine][nLine]
 
 void kernel_MPI(int nLine, int nCol, double in_mat[nLine][nCol], double out_mat[nLine][nCol], double conv_mask[3][3])
 {
-  #pragma omp parallel for
   for (int mat_x_idx = 1; mat_x_idx < nLine - 1; ++mat_x_idx) {
     for (int mat_y_idx = 1; mat_y_idx < nCol - 1; ++mat_y_idx) {
-          out_mat[mat_x_idx][mat_y_idx] +=  
-           ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
-            (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
-            (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
+      out_mat[mat_x_idx][mat_y_idx] +=  
+        ((in_mat[mat_x_idx - 1][mat_y_idx - 1] * conv_mask[0][0]) +
+        (in_mat[mat_x_idx - 1][mat_y_idx] * conv_mask[0][1]) +
+        (in_mat[mat_x_idx - 1][mat_y_idx + 1] * conv_mask[0][2]) +
 
-            (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
-            (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
-            (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
+        (in_mat[mat_x_idx][mat_y_idx - 1] * conv_mask[1][0]) +
+        (in_mat[mat_x_idx][mat_y_idx] * conv_mask[1][1]) +
+        (in_mat[mat_x_idx][mat_y_idx + 1] * conv_mask[1][2]) +
 
-            (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
-            (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
-            (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
-
+        (in_mat[mat_x_idx + 1][mat_y_idx - 1] * conv_mask[2][0]) +
+        (in_mat[mat_x_idx + 1][mat_y_idx] * conv_mask[2][1]) +
+        (in_mat[mat_x_idx + 1][mat_y_idx + 1] * conv_mask[2][2])) * 25724.0;
     }
   }
 }
